@@ -58,6 +58,18 @@
       box-shadow: 0 6px 16px rgba(239, 68, 68, 0.3);
       color: white;
     }
+    .btn.success {
+      border-color: transparent;
+      background: linear-gradient(180deg, rgba(34,197,94,.9), rgba(34,197,94,.8));
+      box-shadow: 0 8px 20px rgba(34,197,94,.3);
+      color: white;
+    }
+    .btn.warning {
+      border-color: transparent;
+      background: linear-gradient(180deg, rgba(251,191,36,0.9), rgba(251,191,36,0.8)); /* amber-400 */
+      box-shadow: 0 6px 16px rgba(251,191,36,0.3);
+      color: black;
+    }
 
     .drop-zone {
       border: 2px dashed rgba(148,163,184,.3);
@@ -128,8 +140,9 @@
       <div id="globalError" style="color:#ef4444; font-size:14px; display:none;"></div>
 
       <div style="display: flex; gap: 10px;">
-        <button class="btn danger" onclick="clearAllFiles()">Clear Files</button>
-        <button class="btn primary" onclick="mergePDFs()">Merge PDFs</button>
+        <button class="btn danger" onclick="clearAllFiles()">Clear All Files</button>
+        <button class="btn warning" onclick="previewPDF()">Preview PDF</button>
+        <button class="btn success" onclick="mergePDFs()">Merge PDFs</button>
       </div>
     </div>
   </div>
@@ -265,7 +278,6 @@
 
   async function mergePDFs() {
     if (!checkForErrors()) return;
-
     if (filesData.length < 2) {
       globalError.style.display = 'block';
       globalError.textContent = 'Please upload at least 2 valid PDF files.';
@@ -288,6 +300,30 @@
     link.href = URL.createObjectURL(blob);
     link.download = 'merged.pdf';
     link.click();
+  }
+
+  async function previewPDF() {
+    if (!checkForErrors()) return;
+    if (filesData.length < 2) {
+      globalError.style.display = 'block';
+      globalError.textContent = 'Please upload at least 2 valid PDF files.';
+      return;
+    }
+
+    const mergedPdf = await PDFLib.PDFDocument.create();
+
+    for (const { file } of filesData) {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await PDFLib.PDFDocument.load(arrayBuffer);
+      const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
+      copiedPages.forEach(page => mergedPdf.addPage(page));
+    }
+
+    const mergedPdfBytes = await mergedPdf.save();
+    const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+    const blobUrl = URL.createObjectURL(blob);
+
+    window.open(blobUrl, '_blank');
   }
 </script>
 
